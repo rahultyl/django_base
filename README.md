@@ -127,10 +127,10 @@ pre-commit run --all-files
 
 On every push and pull request to `main`:
 
-| Job | What it does |
-|---|---|
-| Ruff | Lint and format check |
-| Gitleaks | Secret scanning |
+| Workflow | Job | What it does |
+|---|---|---|
+| `Ruff` | `ruff` | Lint and format check |
+| `Gitleaks` | `gitleaks` | Secret scanning |
 
 ## Settings
 
