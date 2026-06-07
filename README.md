@@ -8,7 +8,7 @@ Django 5.x backend with MySQL, Redis, and Celery.
 - Django 5.2
 - MySQL 9.x (port 3307)
 - Redis 8.x (port 6379)
-- Celery 5.x + django-celery-beat + django-celery-results
+- Celery 5.x
 - Django REST Framework
 
 ## Prerequisites
@@ -36,12 +36,26 @@ source env/bin/activate
 
 **3. Install dependencies**
 ```bash
-pip install -r requirements/base.txt
+pip install -r requirements/dev.txt
 ```
 
-**4. Configure environment**
+**4. Install pre-commit hooks**
 ```bash
-cp lead_engine/settings/local_example.py lead_engine/settings/local.py
+pre-commit install
+```
+
+> On macOS you may need to set SSL certs for pre-commit to work:
+> ```bash
+> export SSL_CERT_FILE=$(python3.11 -c "import certifi; print(certifi.where())")
+> export REQUESTS_CA_BUNDLE=$SSL_CERT_FILE
+> ```
+> Add these to your `~/.zshrc` to make them permanent.
+
+**5. Configure environment**
+
+Create a `local.py` settings file:
+```bash
+cp lead_engine/settings/base.py lead_engine/settings/local.py
 ```
 
 Create a `.env` file at the project root:
@@ -63,20 +77,19 @@ DB_PORT=3307
 
 REDIS_URL=redis://127.0.0.1:6379/0
 CELERY_BROKER_URL=redis://127.0.0.1:6379/0
-CELERY_RESULT_BACKEND=django-db
 ```
 
-**5. Create the database**
+**6. Create the database**
 ```bash
 mysql -u root -P 3307 -e "CREATE DATABASE IF NOT EXISTS lead_engine CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
-**6. Run migrations**
+**7. Run migrations**
 ```bash
 python manage.py migrate
 ```
 
-**7. Start the development server**
+**8. Start the development server**
 ```bash
 python manage.py runserver
 ```
@@ -93,6 +106,32 @@ celery -A lead_engine worker --loglevel=info
 celery -A lead_engine beat --loglevel=info
 ```
 
+## Code Quality
+
+This project uses [pre-commit](https://pre-commit.com/) hooks that run automatically on every commit:
+
+| Hook | Purpose |
+|---|---|
+| `ruff` | Lint and auto-fix Python code |
+| `ruff-format` | Format Python code |
+| `gitleaks` | Detect hardcoded secrets |
+| `trailing-whitespace` | Remove trailing whitespace |
+| `check-added-large-files` | Block files over 500KB |
+
+Run hooks manually across all files:
+```bash
+pre-commit run --all-files
+```
+
+## CI (GitHub Actions)
+
+On every push and pull request to `main`:
+
+| Job | What it does |
+|---|---|
+| Ruff | Lint and format check |
+| Gitleaks | Secret scanning |
+
 ## Settings
 
 | File | Purpose |
@@ -101,11 +140,8 @@ celery -A lead_engine beat --loglevel=info
 | `lead_engine/settings/local.py` | Local dev overrides — gitignored, create from `base.py` |
 | `lead_engine/settings/production.py` | Production overrides — set via `DJANGO_SETTINGS_MODULE` env var |
 
-## Environment Variable
-
 Override settings module per environment:
 ```bash
-# production
 export DJANGO_SETTINGS_MODULE=lead_engine.settings.production
 ```
 
@@ -114,5 +150,5 @@ export DJANGO_SETTINGS_MODULE=lead_engine.settings.production
 | File | Purpose |
 |---|---|
 | `requirements/base.txt` | Core dependencies |
-| `requirements/dev.txt` | Dev dependencies (includes base) |
+| `requirements/dev.txt` | Dev dependencies — includes base + pre-commit + ruff |
 | `requirements/freeze.txt` | Fully pinned snapshot for reproducible deploys |
