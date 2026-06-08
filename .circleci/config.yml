@@ -5,7 +5,7 @@ jobs:
     docker:
       - image: cimg/python:3.11
         environment:
-          DJANGO_SETTINGS_MODULE: lead_engine.settings.local
+          DJANGO_SETTINGS_MODULE: lead_engine.settings.base
           SECRET_KEY: ci-secret-key-not-for-production
           DEBUG: "True"
           ALLOWED_HOSTS: localhost,127.0.0.1
