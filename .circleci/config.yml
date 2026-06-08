@@ -1,0 +1,64 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/python:3.11
+        environment:
+          DJANGO_SETTINGS_MODULE: lead_engine.settings.local
+          SECRET_KEY: ci-secret-key-not-for-production
+          DEBUG: "True"
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          DB_NAME: lead_engine_test
+          DB_USER: root
+          DB_PASSWORD: ""
+          DB_HOST: 127.0.0.1
+          DB_PORT: "3306"
+          REDIS_URL: redis://127.0.0.1:6379/0
+          CELERY_BROKER_URL: redis://127.0.0.1:6379/0
+
+      - image: cimg/mysql:8.0
+        command: --default-authentication-plugin=mysql_native_password
+        environment:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: lead_engine_test
+
+      - image: cimg/redis:7.0
+
+    steps:
+      - checkout
+
+      - run:
+          name: Install system dependencies for mysqlclient
+          command: sudo apt-get update && sudo apt-get install -y default-libmysqlclient-dev pkg-config
+
+      - restore_cache:
+          keys:
+            - pip-v1-{{ checksum "requirements/base.txt" }}
+            - pip-v1-
+
+      - run:
+          name: Install Python dependencies
+          command: pip install -r requirements/base.txt
+
+      - save_cache:
+          key: pip-v1-{{ checksum "requirements/base.txt" }}
+          paths:
+            - ~/.cache/pip
+
+      - run:
+          name: Wait for MySQL
+          command: dockerize -wait tcp://127.0.0.1:3306 -timeout 60s
+
+      - run:
+          name: Wait for Redis
+          command: dockerize -wait tcp://127.0.0.1:6379 -timeout 30s
+
+      - run:
+          name: Run tests
+          command: python manage.py test --verbosity=2
+
+workflows:
+  ci:
+    jobs:
+      - test
