@@ -28,10 +28,6 @@ jobs:
     steps:
       - checkout
 
-      - run:
-          name: Install system dependencies for mysqlclient
-          command: sudo apt-get update && sudo apt-get install -y default-libmysqlclient-dev pkg-config
-
       - restore_cache:
           keys:
             - pip-v1-{{ checksum "requirements/base.txt" }}
